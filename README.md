@@ -1,6 +1,6 @@
 # OpenRecord
 
-A small, open-source screen recorder for Android 10+. English interface, native Android controls, no ads, watermarks, analytics, or network permission. MIT licensed.
+A small, open-source screen recorder for Android 10+. Minimal dark interface in English, native Android controls, no ads, watermarks, analytics, or network permission. MIT licensed.
 
 ## Download
 
@@ -12,7 +12,7 @@ Open the APK on your phone and allow installation from your file manager. This i
 
 1. Set **Audio** and **Quality** in the app. Settings are saved automatically.
 2. Tap **Add to Quick Settings** and confirm, or add **Screen recording** from the Quick Settings editor.
-3. Tap the tile. Android asks which screen or app to capture. After a **3-second countdown**, recording begins. You can cancel during the countdown.
+3. Tap the tile. Android asks which screen or app to capture. Recording starts after **3 seconds**, with the countdown in the live notification. There is no separate countdown screen. You can cancel from the notification or tile.
 4. Stop from the live notification / Samsung Now Bar, the tile, or the app.
 
 The tile opens the system capture picker directly, using your saved settings. The first run also requests audio and notification permissions. MP4 videos appear in your gallery under `Movies/OpenRecord`.
@@ -24,7 +24,7 @@ The tile opens the system capture picker directly, using your saved settings. Th
 - Quick Settings start/stop tile.
 - Live notification with an elapsed timer and Stop action.
 - Android 16 Live Updates request for the status chip / Samsung Now Bar.
-- A cancellable 3-second countdown before recording.
+- A cancellable 3-second countdown in the live notification, without a separate screen.
 
 ## Platform limitations
 
@@ -57,7 +57,7 @@ This runs aapt2, javac, D8, zipalign and apksigner and produces `dist/OpenRecord
 ## Source
 
 - `MainActivity` — minimal settings and tile setup.
-- `CaptureActivity` — system picker and countdown.
+- `CaptureActivity` — transparent system-picker entry point.
 - `RecordingService` — foreground notification, projection and MediaStore lifecycle.
 - `RecorderEngine` — surface H.264 encoder, PCM audio capture/mixing, AAC encoder and MP4 muxing. Samples stream to disk rather than accumulating the recording in memory.
 - `RecordTileService` — direct start/stop from Quick Settings.
