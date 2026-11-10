@@ -25,6 +25,8 @@ final class RecorderEngine {
     private AudioRecord internal, microphone;
     private volatile boolean stopping;
     private volatile Exception audioError;
+    private volatile boolean deviceAudioDetected;
+    private volatile long deviceAudioSamples;
     private Thread feeder;
     private int videoTrack = -1, audioTrack = -1;
     private boolean muxStarted;
@@ -63,6 +65,11 @@ final class RecorderEngine {
         }, "OpenRecord-encoder").start();
     }
     void stop() { stopping = true; }
+    String audioWarning() {
+        return (mode == 0 || mode == 2) && deviceAudioSamples >= RATE * 3L && !deviceAudioDetected
+            ? "Video saved, but no device audio was detected. If sound was playing, check media volume and try again without Bluetooth headphones. The playing app or Android firmware may block playback capture."
+            : null;
+    }
 
     private void prepare() throws Exception {
         WindowManager windows = context.getSystemService(WindowManager.class);
@@ -75,7 +82,7 @@ final class RecorderEngine {
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, maxSize == 1080 ? 8_000_000 : 4_000_000);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         video = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
         video.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -95,26 +102,38 @@ final class RecorderEngine {
                 AudioPlaybackCaptureConfiguration capture = new AudioPlaybackCaptureConfiguration.Builder(projection)
                     .addMatchingUsage(AudioAttributes.USAGE_MEDIA).addMatchingUsage(AudioAttributes.USAGE_GAME).addMatchingUsage(AudioAttributes.USAGE_UNKNOWN).build();
                 internal = new AudioRecord.Builder().setAudioFormat(pcm).setBufferSizeInBytes(buffer).setAudioPlaybackCaptureConfig(capture).build();
-                checkAudio(internal); internal.startRecording();
+                checkAudio(internal);
             }
             if (mode == 1 || mode == 2) {
                 microphone = new AudioRecord.Builder().setAudioSource(MediaRecorder.AudioSource.MIC).setAudioFormat(pcm).setBufferSizeInBytes(buffer).build();
-                checkAudio(microphone); microphone.startRecording();
+                checkAudio(microphone);
             }
         }
         display = projection.createVirtualDisplay("OpenRecord", width, height, context.getResources().getDisplayMetrics().densityDpi,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, surface, null, null);
+        // Start capture only after the projection's display session is active.
+        if (internal != null) startAudio(internal);
+        if (microphone != null) startAudio(microphone);
         if (audio != null) { feeder = new Thread(this::feedAudio, "OpenRecord-PCM"); feeder.start(); }
     }
     private static void checkAudio(AudioRecord r) throws Exception {
         if (r.getState() != AudioRecord.STATE_INITIALIZED) throw new java.io.IOException("Could not open the selected audio source.");
+    }
+    private static void startAudio(AudioRecord source) throws Exception {
+        source.startRecording();
+        if (source.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING)
+            throw new java.io.IOException("The selected audio source did not start. Check audio permission and try again.");
     }
     private void feedAudio() {
         short[] system = new short[SAMPLES], mic = new short[SAMPLES];
         long samples = 0;
         try {
             while (!stopping) {
-                if (internal != null) readFully(internal, system);
+                if (internal != null) {
+                    readFully(internal, system);
+                    for (short value : system) if (value != 0) { deviceAudioDetected = true; break; }
+                    deviceAudioSamples += SAMPLES;
+                }
                 if (microphone != null) readFully(microphone, mic);
                 int index;
                 do { index = audio.dequeueInputBuffer(10000); } while (index < 0 && !stopping);

@@ -20,7 +20,7 @@ The tile opens the system capture picker directly, using your saved settings. Th
 ## Features
 
 - Device audio, microphone, both, or no audio.
-- H.264 video and AAC audio in MP4, 1080p or 720p at 30 fps.
+- H.264 video and AAC audio in MP4, 1080p or 720p targeting 60 fps by default. Actual frame rate depends on the device encoder, display and screen activity.
 - Quick Settings start/stop tile.
 - Live notification with an elapsed timer and Stop action.
 - Android 16 Live Updates request for the status chip / Samsung Now Bar.
@@ -29,6 +29,10 @@ The tile opens the system capture picker directly, using your saved settings. Th
 ## Platform limitations
 
 Android only captures internal audio from apps that allow AudioPlaybackCapture. Protected content, calls, or apps that disallow capture can produce silence or a black picture. OpenRecord does not bypass these restrictions. Use headphones when mixing microphone and device audio to avoid recording speaker output twice.
+
+Audio capture starts after the virtual display is created, and both audio sources are checked for a successful recording start. If at least three seconds of device audio contain only zero samples, OpenRecord saves the video and shows a warning (also shown when reopening the app). This is a diagnostic, not proof of a capture failure: the source may simply have been silent. It checks device audio separately in mixed mode so a working microphone cannot hide a silent playback stream.
+
+After reinstalling, choose **Device audio** and grant audio recording permission again. If a playing source is silent in the saved video, compare a short recording through the speaker, wired headphones and Bluetooth, with media volume above zero. Bluetooth playback should use the same internal capture API; device firmware can affect the result. Do not switch to microphone mode to capture headphone playback.
 
 Live Updates and Now Bar placement depend on the Android / One UI version and notification settings. The app uses one foreground-service notification for both the notification shade and eligible live surfaces. Compact chips show status; expand them for actions. Older devices retain the standard notification and tile.
 
@@ -67,5 +71,7 @@ This runs aapt2, javac, D8, zipalign and apksigner and produces `dist/OpenRecord
 The initial capture and live-chip stop flow was tested on a Samsung Galaxy A15 running Android 16 / One UI 8.5. A vendor-specific shutdown issue was fixed so revoking projection drains buffered media and finalizes the MP4. The Quick Settings flow, simplified interface and countdown need a final device check after installation.
 
 Suggested checks: cancel screen consent; cancel countdown; record each audio mode; stop from Now Bar, tile, app and system projection control; reopen the saved MP4; start a second recording; check rotation and lock-screen behavior.
+
+For the 60 fps/audio startup changes, repeat a clean-install permission flow and record moving content with capturable audio through speaker and Bluetooth. Verify audio playback, A/V sync, and the resulting video's frame timestamps. Also record more than three seconds with no playback: a device-audio warning should appear without deleting the video. Repeat in mixed mode with only microphone input. These changes still require device validation, including SM-A115F on Android 16.
 
 Platform documentation: [MediaProjection](https://developer.android.com/media/grow/media-projection), [audio capture](https://developer.android.com/media/platform/av-capture), [Live Updates](https://developer.android.com/develop/ui/views/notifications/live-update).
