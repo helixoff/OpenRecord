@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
         text(root, "Audio", 14);
         audio = spinner(root, new String[]{"Device audio", "Microphone", "Device audio + microphone", "No audio"});
         text(root, "Quality", 14);
-        quality = spinner(root, new String[]{"1080p · 30 fps", "720p · 30 fps"});
+        quality = spinner(root, new String[]{"1080p · 60 fps", "720p · 60 fps"});
         SharedPreferences preferences = getSharedPreferences("settings", 0);
         audio.setSelection(preferences.getInt("audio", 0)); quality.setSelection(preferences.getInt("quality", 0));
         AdapterView.OnItemSelectedListener save = new AdapterView.OnItemSelectedListener() {
@@ -89,6 +89,8 @@ public class MainActivity extends Activity {
         super.onResume(); handler.post(refresh);
         String error = getSharedPreferences("state", 0).getString("error", null);
         if (error != null) { new AlertDialog.Builder(this).setTitle("Recording failed").setMessage(error).setPositiveButton("OK", null).show(); getSharedPreferences("state", 0).edit().remove("error").apply(); }
+        String warning = getSharedPreferences("state", 0).getString("warning", null);
+        if (warning != null) { new AlertDialog.Builder(this).setTitle("Check device audio").setMessage(warning).setPositiveButton("OK", null).show(); getSharedPreferences("state", 0).edit().remove("warning").apply(); }
     }
     @Override protected void onPause() { handler.removeCallbacks(refresh); super.onPause(); }
     private int dp(int n) { return (int)(n * getResources().getDisplayMetrics().density); }

@@ -113,7 +113,11 @@ public class RecordingService extends Service {
             String message = error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage();
             getSharedPreferences("state", 0).edit().putString("error", message).apply();
             Toast.makeText(this, "Recording failed: " + message, Toast.LENGTH_LONG).show();
-        } else if (hadOutput) Toast.makeText(this, "Video saved to Movies/OpenRecord", Toast.LENGTH_LONG).show();
+        } else if (hadOutput) {
+            String warning = engine == null ? null : engine.audioWarning();
+            if (warning != null) getSharedPreferences("state", 0).edit().putString("warning", warning).apply();
+            Toast.makeText(this, warning == null ? "Video saved to Movies/OpenRecord" : warning, Toast.LENGTH_LONG).show();
+        }
         stopForeground(STOP_FOREGROUND_REMOVE);
         TileService.requestListeningState(this, new ComponentName(this, RecordTileService.class));
         stopSelf();
